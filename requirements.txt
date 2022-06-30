@@ -10,12 +10,14 @@ colorama==0.4.4
 cryptography==37.0.1
 ecdsa==0.17.0
 flask==2.0.3
+gunicorn==20.1.0
 idna==3.3
 itsdangerous==2.0.1
 jinja2==3.0.3
 markupsafe==2.0.1
 pycparser==2.21
 pyopenssl==22.0.0
+psycopg2==2.9.3
 pysocks==1.7.1
 requests==2.27.1
 setuptools==61.2.0
