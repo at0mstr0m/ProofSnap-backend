@@ -35,6 +35,11 @@ def verify_signature(data: str, public_key: str, signature: str) -> bool:
         return False
 
 
+@app.route("/", methods=['GET'])
+def test():
+    return "application running", 200
+
+
 @app.route("/sign_bitstream", methods=['POST'])
 def sign_bitstream():
     print(request.values)
