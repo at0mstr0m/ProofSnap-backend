@@ -3,7 +3,7 @@ from typing import Tuple
 from flask import Flask, request, jsonify
 from ecdsa import VerifyingKey, SigningKey, NIST521p
 from ecdsa.keys import BadSignatureError
-import werkzeug, os
+import werkzeug
 
 app = Flask(__name__)
 CURVE = NIST521p
@@ -14,6 +14,9 @@ def generate_key_pair() -> Tuple[str, str]:
     public_key = private_key.verifying_key
     # to_string() returns type byte, but hex() returns str
     return private_key.to_string().hex(), public_key.to_string().hex()
+
+
+my_private_key, my_public_key = generate_key_pair()
 
 
 def get_public_key_from_string(public_key: str) -> VerifyingKey:
@@ -107,8 +110,7 @@ def check():
     return jsonify(response), 200
 
 
-port = int(os.environ.get("PORT", 5000))
-my_private_key, my_public_key = generate_key_pair()
-if __name__ == '__main__':
-    app.run(host='https://proofsnap.herokuapp.com/', port=port)
+# only necessary when running the server locally
+# if __name__ == '__main__':
+    # app.run(host='https://proofsnap.herokuapp.com/', port=port)
     # app.run(host='192.168.188.40', port=1337, debug=True)
