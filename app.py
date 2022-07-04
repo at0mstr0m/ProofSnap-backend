@@ -16,6 +16,9 @@ def generate_key_pair() -> Tuple[str, str]:
     return private_key.to_string().hex(), public_key.to_string().hex()
 
 
+my_private_key, my_public_key = generate_key_pair()
+
+
 def get_public_key_from_string(public_key: str) -> VerifyingKey:
     return VerifyingKey.from_string(bytes.fromhex(public_key), curve=CURVE)
 
@@ -33,6 +36,11 @@ def verify_signature(data: str, public_key: str, signature: str) -> bool:
         return get_public_key_from_string(public_key).verify(bytes.fromhex(signature), data.encode())
     except BadSignatureError:
         return False
+
+
+@app.route("/", methods=['GET'])
+def test():
+    return "application running", 200
 
 
 @app.route("/sign_bitstream", methods=['POST'])
@@ -102,6 +110,7 @@ def check():
     return jsonify(response), 200
 
 
-if __name__ == '__main__':
-    my_private_key, my_public_key = generate_key_pair()
-    app.run(host='192.168.188.40', port=1337, debug=True)
+# only necessary when running the server locally
+# if __name__ == '__main__':
+    # app.run(host='https://proofsnap.herokuapp.com/', port=port)
+    # app.run(host='192.168.188.40', port=1337, debug=True)
