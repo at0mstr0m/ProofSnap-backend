@@ -102,10 +102,8 @@ class Blockchain:
         self._chain.append(new_block)
         self.save_to_json()
 
-    def contains(self, image_data: str, signature: str, timestamp: str) -> bool:
+    def contains(self, image_data: str, signature: str) -> bool:
         for block in self._chain[1:]:  # omit genesis block
-            if (block.data['image_data'] == image_data
-                    and block.data['signature'] == signature
-                    and block.timestamp == timestamp):
+            if block.data['image_data'] == image_data and block.data['signature'] == signature:
                 return True
         return False

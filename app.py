@@ -107,7 +107,7 @@ def check():
     if not signature_verified:
         return jsonify(response), 200
     # return true if signature is correct and data is found in blockchain
-    response['result'] = blockchain.contains(image_data, signature, float(request.form["timestamp"]))
+    response['result'] = blockchain.contains(image_data, signature)
     return jsonify(response), 200
 
 
