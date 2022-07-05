@@ -1,4 +1,6 @@
-import os, time
+import os
+import time
+
 import werkzeug
 from flask import Flask, request, jsonify, send_file
 
@@ -21,6 +23,7 @@ def test():
 @app.route("/chain", methods=['GET'])
 def chain():
     return send_file('blockchain.json'), 200
+
 
 # @app.route("/sign_bitstream", methods=['POST'])
 # def sign_bitstream():
@@ -64,10 +67,10 @@ def sign():
         }
         return jsonify(response), 400
     timestamp = time.time()
-    image_data = request.form["sha256Hash"] + request.form["sha512Hash"]
+    image_data = request.form["sha256Hash"] + request.form["sha512Hash"] + str(timestamp)
     signature = generate_signature(image_data, private_key)
     # the signature for image_data can be verified itself
-    blockchain.store_data({'image_data': image_data, 'signature': signature})
+    blockchain.store_data({'image_data': image_data, 'signature': signature}, timestamp)
     # the number of the block, in which the data is stored, is not
     response = {
         'message': 'successfully signed',
@@ -81,13 +84,18 @@ def sign():
 
 @app.route("/check", methods=['POST'])
 def check():
+    print(request.values)
     response = {
         'message': 'checked signature',
         'result': False,
     }
-    image_data = request.form["sha256Hash"] + request.form["sha512Hash"]
-    external_public_key = request.form['publicKey']
-    signature = request.form['signature']
+    try:
+        image_data = request.form["sha256Hash"] + request.form["sha512Hash"] + request.form["timestamp"]
+        external_public_key = request.form['publicKey']
+        signature = request.form['signature']
+    except:
+        return jsonify(response), 200
+
     # check signature itself
     signature_verified = verify_signature(image_data, external_public_key, signature)
     # if the signature cannot be verified in the first place, there is no need to search for it in the blockchain

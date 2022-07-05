@@ -1,4 +1,4 @@
-import json
+import json, time
 from typing import List
 
 from block import Block
@@ -12,7 +12,7 @@ def validate(chain: List[Block]) -> bool:
         if not (current_block.previous_signature == previous_block.signature
                 and verify_signature(str(current_block), current_block.public_key, current_block.signature)
                 and previous_block.nr == current_block.nr - 1
-                and previous_block.time_stamp < current_block.time_stamp):
+                and previous_block.timestamp < current_block.timestamp):
             print(f'Problem bei Block {str(i)} Blockchain invalide.')
             return False
     print('Blockchain valide!')
@@ -27,7 +27,8 @@ def init_empty_blockchain(private_key: str, public_key: str) -> List[Block]:
                                 'curve': 'NIST521p'},
                           public_key=public_key,
                           # the numbers from LOST
-                          previous_signature='4 8 15 16 23 42')
+                          previous_signature='4 8 15 16 23 42',
+                          timestamp=time.time())
     genesis_block.sign(private_key)
     return [genesis_block]
 
@@ -52,7 +53,7 @@ class Blockchain:
                             data=block_data['data'],
                             public_key=self.public_key,
                             previous_signature=block_data['previous_signature'],
-                            time_stamp=block_data['time_stamp'],
+                            timestamp=block_data['timestamp'],
                             signature=block_data['signature'])
                       for block_data in self.get_chain_from_json()]
         if validate(temp_chain):
@@ -88,13 +89,14 @@ class Blockchain:
 #                 and block.previous_hash == str(previous_block)
 #                 and int(block_hash, 16) < 2 ** (256 - self.difficulty)
 #                 and previous_block.nr == block.nr - 1
-#                 and previous_block.time_stamp < block.time_stamp)
+#                 and previous_block.timestamp < block.timestamp)
 
-    def store_data(self, data: dict):
+    def store_data(self, data: dict, timestamp: float):
         new_block = Block(nr=len(self._chain),
                           data=data,
                           public_key=self.public_key,
-                          previous_signature=self._chain[-1].signature)
+                          previous_signature=self._chain[-1].signature,
+                          timestamp=timestamp)
         new_block.sign(private_key=self.private_key)
         self._chain.append(new_block)
         self.save_to_json()

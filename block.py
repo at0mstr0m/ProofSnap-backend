@@ -1,5 +1,3 @@
-import time
-
 from crypto_helper import generate_signature
 
 
@@ -9,7 +7,7 @@ class Block:
                  data: dict,
                  public_key: str,
                  previous_signature: str,
-                 time_stamp: float = time.time(),
+                 timestamp: float,
                  signature: str = None):
         self.nr = nr
         self.data = dict(sorted(data.items()))
@@ -21,16 +19,12 @@ class Block:
         # the corresponding public_key to the private_key this block was signed with
         self.public_key = public_key
         self.previous_signature = previous_signature
-        # if time_stamp == 0.0:
-        #     self.time_stamp = time.time()
-        # else:
-        #     self.time_stamp = time_stamp
-        self.time_stamp = time_stamp
+        self.timestamp = timestamp
         self.signature = signature
 
     def to_dict(self) -> dict:
         return {'nr': self.nr,
-                'time_stamp': self.time_stamp,
+                'timestamp': self.timestamp,
                 'data': self.data,
                 'public_key': self.public_key,
                 'signature': self.signature,
@@ -38,7 +32,7 @@ class Block:
 
     def __str__(self):
         return str({'nr': self.nr,
-                    'time_stamp': self.time_stamp,
+                    'timestamp': self.timestamp,
                     'data': self.data,
                     'public_key': self.public_key,
                     'previous_signature': self.previous_signature})
