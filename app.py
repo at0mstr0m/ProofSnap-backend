@@ -25,6 +25,11 @@ def chain():
     return send_file('blockchain.json'), 200
 
 
+@app.route("/chain_in_ram", methods=['GET'])
+def chain_in_ram():
+    return jsonify([block.to_dict() for block in blockchain._chain]), 200
+
+
 # @app.route("/sign_bitstream", methods=['POST'])
 # def sign_bitstream():
 #     print(request.values)
@@ -93,7 +98,7 @@ def check():
         image_data = request.form["sha256Hash"] + request.form["sha512Hash"] + request.form["timestamp"]
         external_public_key = request.form['publicKey']
         signature = request.form['signature']
-    except:
+    except KeyError:
         return jsonify(response), 200
 
     # check signature itself
@@ -102,7 +107,7 @@ def check():
     if not signature_verified:
         return jsonify(response), 200
     # return true if signature is correct and data is found in blockchain
-    response['result'] = blockchain.contains(image_data, signature)
+    response['result'] = blockchain.contains(image_data, signature, float(request.form["timestamp"]))
     return jsonify(response), 200
 
 

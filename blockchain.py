@@ -1,5 +1,6 @@
-import json, time
-from typing import List
+import json
+import time
+from typing import List, Union
 
 from block import Block
 from crypto_helper import verify_signature
@@ -78,18 +79,18 @@ class Blockchain:
         """
         return json.load(open(self.save_file_path, encoding='utf-8'))
 
-#     def check_block_integrity(self, block: Block) -> bool:
-#         """
-#         checks hash, previous hash, difficulty, block nr and timestamp of block
-#         :param      block: Block
-#         :return:    True if block is valid
-#         """
-#         previous_block = self._chain[block.nr - 1]
-#         return (str(block) == block_hash
-#                 and block.previous_hash == str(previous_block)
-#                 and int(block_hash, 16) < 2 ** (256 - self.difficulty)
-#                 and previous_block.nr == block.nr - 1
-#                 and previous_block.timestamp < block.timestamp)
+    #     def check_block_integrity(self, block: Block) -> bool:
+    #         """
+    #         checks hash, previous hash, difficulty, block nr and timestamp of block
+    #         :param      block: Block
+    #         :return:    True if block is valid
+    #         """
+    #         previous_block = self._chain[block.nr - 1]
+    #         return (str(block) == block_hash
+    #                 and block.previous_hash == str(previous_block)
+    #                 and int(block_hash, 16) < 2 ** (256 - self.difficulty)
+    #                 and previous_block.nr == block.nr - 1
+    #                 and previous_block.timestamp < block.timestamp)
 
     def store_data(self, data: dict, timestamp: float):
         new_block = Block(nr=len(self._chain),
@@ -101,10 +102,10 @@ class Blockchain:
         self._chain.append(new_block)
         self.save_to_json()
 
-    def contains(self, image_data: str, signature: str) -> bool:
-        for block in self._chain[1:]:   # omit genesis block
-            if block.data['image_data'] == image_data and block.data['signature'] == signature:
+    def contains(self, image_data: str, signature: str, timestamp: str) -> bool:
+        for block in self._chain[1:]:  # omit genesis block
+            if (block.data['image_data'] == image_data
+                    and block.data['signature'] == signature
+                    and block.timestamp == timestamp):
                 return True
         return False
-
-
