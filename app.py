@@ -1,73 +1,51 @@
-from typing import Tuple
-
-from flask import Flask, request, jsonify
-from ecdsa import VerifyingKey, SigningKey, NIST521p
-from ecdsa.keys import BadSignatureError
+import os, time
 import werkzeug
+from flask import Flask, request, jsonify, send_file
+
+from blockchain import Blockchain
+from crypto_helper import generate_signature, verify_signature
 
 app = Flask(__name__)
-CURVE = NIST521p
 
+private_key = os.environ["private_key"]
+public_key = os.environ["public_key"]
 
-def generate_key_pair() -> Tuple[str, str]:
-    private_key = SigningKey.generate(curve=CURVE)
-    public_key = private_key.verifying_key
-    # to_string() returns type byte, but hex() returns str
-    return private_key.to_string().hex(), public_key.to_string().hex()
-
-
-my_private_key, my_public_key = generate_key_pair()
-
-
-def get_public_key_from_string(public_key: str) -> VerifyingKey:
-    return VerifyingKey.from_string(bytes.fromhex(public_key), curve=CURVE)
-
-
-def get_private_key_from_string(private_key: str) -> SigningKey:
-    return SigningKey.from_string(bytes.fromhex(private_key), curve=CURVE)
-
-
-def generate_signature(data: str, private_key: str) -> str:
-    return get_private_key_from_string(private_key).sign(data.encode()).hex()
-
-
-def verify_signature(data: str, public_key: str, signature: str) -> bool:
-    try:
-        return get_public_key_from_string(public_key).verify(bytes.fromhex(signature), data.encode())
-    except BadSignatureError:
-        return False
+blockchain = Blockchain(private_key, public_key)
 
 
 @app.route("/", methods=['GET'])
 def test():
-    return "application running", 200
+    return "The ProofSnap backend is running!", 200
 
 
-@app.route("/sign_bitstream", methods=['POST'])
-def sign_bitstream():
-    print(request.values)
-    current_file = request.files['file'].stream.read()
-    signature = generate_signature(current_file, my_private_key)
-    print(request.values.get('user_id'))
-    response = {
-        'message': 'successfully signed',
-        'public_key': my_public_key,
-        'signature': signature,
-    }
-    return jsonify(response), 201
+@app.route("/chain", methods=['GET'])
+def chain():
+    return send_file('blockchain.json'), 200
 
-
-@app.route("/check_bitstream", methods=['GET'])
-def check_bitstream():
-    current_file = request.files.get('file').stream.read()
-    public_key = request.form['public_key']
-    signature = request.form['signature']
-    result = verify_signature(current_file, public_key, signature)
-    response = {
-        'message': 'checked signature',
-        'result': result,
-    }
-    return jsonify(response), 200
+# @app.route("/sign_bitstream", methods=['POST'])
+# def sign_bitstream():
+#     print(request.values)
+#     current_file = request.files['file'].stream.read()
+#     signature = generate_signature(current_file, private_key)
+#     response = {
+#         'message': 'successfully signed',
+#         'public_key': public_key,
+#         'signature': signature,
+#     }
+#     return jsonify(response), 201
+#
+#
+# @app.route("/check_bitstream", methods=['GET'])
+# def check_bitstream():
+#     current_file = request.files.get('file').stream.read()
+#     public_key = request.form['public_key']
+#     signature = request.form['signature']
+#     result = verify_signature(current_file, public_key, signature)
+#     response = {
+#         'message': 'checked signature',
+#         'result': result,
+#     }
+#     return jsonify(response), 200
 
 
 @app.route("/sign", methods=['POST'])
@@ -76,7 +54,7 @@ def sign():
     try:
         sha256_hash = request.form["sha256Hash"]
         sha512_hash = request.form["sha512Hash"]
-        user_id = request.form["user_id"]
+        # the length of the hashes must be correct
         assert len(sha256_hash) == 64
         assert len(sha512_hash) == 128
     except (werkzeug.exceptions.BadRequestKeyError, AssertionError) as e:
@@ -85,12 +63,17 @@ def sign():
             'message': 'insufficient request',
         }
         return jsonify(response), 400
-    collected_data = request.form["sha256Hash"] + request.form["sha512Hash"] + request.form["user_id"]
-    signature = generate_signature(collected_data, my_private_key)
+    timestamp = time.time()
+    image_data = request.form["sha256Hash"] + request.form["sha512Hash"]
+    signature = generate_signature(image_data, private_key)
+    # the signature for image_data can be verified itself
+    blockchain.store_data({'image_data': image_data, 'signature': signature})
+    # the number of the block, in which the data is stored, is not
     response = {
         'message': 'successfully signed',
-        'public_key': my_public_key,
+        'public_key': public_key,
         'signature': signature,
+        'timestamp': timestamp,
     }
     print(response)
     return jsonify(response), 201
@@ -98,19 +81,23 @@ def sign():
 
 @app.route("/check", methods=['POST'])
 def check():
-    print(request.values)
-    collected_data = request.form["sha256Hash"] + request.form["sha512Hash"] + request.form["user_id"]
-    public_key = request.form['publicKey']
-    signature = request.form['signature']
-    result = verify_signature(collected_data, public_key, signature)
     response = {
         'message': 'checked signature',
-        'result': result,
+        'result': False,
     }
+    image_data = request.form["sha256Hash"] + request.form["sha512Hash"]
+    external_public_key = request.form['publicKey']
+    signature = request.form['signature']
+    # check signature itself
+    signature_verified = verify_signature(image_data, external_public_key, signature)
+    # if the signature cannot be verified in the first place, there is no need to search for it in the blockchain
+    if not signature_verified:
+        return jsonify(response), 200
+    # return true if signature is correct and data is found in blockchain
+    response['result'] = blockchain.contains(image_data, signature)
     return jsonify(response), 200
 
 
 # only necessary when running the server locally
-# if __name__ == '__main__':
-    # app.run(host='https://proofsnap.herokuapp.com/', port=port)
-    # app.run(host='192.168.188.40', port=1337, debug=True)
+if __name__ == '__main__':
+    app.run(host='192.168.188.40', port=1337, debug=True)
