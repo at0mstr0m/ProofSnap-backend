@@ -4,7 +4,7 @@ import time
 import werkzeug
 from flask import Flask, request, jsonify, send_file
 
-from blockchain import Blockchain
+# from blockchain import Blockchain
 from crypto_helper import generate_signature, verify_signature
 
 app = Flask(__name__)
@@ -12,7 +12,7 @@ app = Flask(__name__)
 private_key = os.environ["private_key"]
 public_key = os.environ["public_key"]
 
-blockchain = Blockchain(private_key, public_key)
+# blockchain = Blockchain(private_key, public_key)
 
 
 @app.route("/", methods=['GET'])
@@ -25,9 +25,9 @@ def chain():
     return send_file('blockchain.json'), 200
 
 
-@app.route("/chain_in_ram", methods=['GET'])
-def chain_in_ram():
-    return jsonify([block.to_dict() for block in blockchain._chain]), 200
+# @app.route("/chain_in_ram", methods=['GET'])
+# def chain_in_ram():
+#     return jsonify([block.to_dict() for block in blockchain._chain]), 200
 
 
 # @app.route("/sign_bitstream", methods=['POST'])
@@ -73,10 +73,11 @@ def sign():
         return jsonify(response), 400
     timestamp = time.time()
     image_data = request.form["sha256Hash"] + request.form["sha512Hash"] + str(timestamp)
-    signature = generate_signature(image_data, private_key)
     # the signature for image_data can be verified itself
-    blockchain.store_data({'image_data': image_data, 'signature': signature}, timestamp)
-    # the number of the block, in which the data is stored, is not
+    signature = generate_signature(image_data, private_key)
+    # save data to blockchain
+    # blockchain.store_data({'image_data': image_data, 'signature': signature}, timestamp)
+    # the number of the block, in which the data is stored, is not sent
     response = {
         'message': 'successfully signed',
         'public_key': public_key,
@@ -102,12 +103,12 @@ def check():
         return jsonify(response), 200
 
     # check signature itself
-    signature_verified = verify_signature(image_data, external_public_key, signature)
-    # if the signature cannot be verified in the first place, there is no need to search for it in the blockchain
-    if not signature_verified:
-        return jsonify(response), 200
-    # return true if signature is correct and data is found in blockchain
-    response['result'] = blockchain.contains(image_data, signature)
+    response['result'] = verify_signature(image_data, external_public_key, signature)
+    # # if the signature cannot be verified in the first place, there is no need to search for it in the blockchain
+    # if not signature_verified:
+    #     return jsonify(response), 200
+    # # return true if signature is correct and data is found in blockchain
+    # response['result'] = blockchain.contains(image_data, signature)
     return jsonify(response), 200
 
 

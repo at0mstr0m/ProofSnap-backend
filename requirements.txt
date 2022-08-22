@@ -27,3 +27,4 @@ werkzeug==2.0.3
 wheel==0.37.1
 win_inet_pton==1.1.0
 wincertstore==0.2
+pygithub~=1.53

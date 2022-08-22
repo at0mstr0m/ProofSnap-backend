@@ -1,7 +1,6 @@
 import json
 import time
-from typing import List, Union
-
+from typing import List
 from block import Block
 from crypto_helper import verify_signature
 
